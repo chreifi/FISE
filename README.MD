@@ -1,8 +1,8 @@
 The following serialEM scripts are used by the Jensen group to collect FISE tomography data:
-
 1-Jensen_FISE.txt
 2-GetEucentricHeight.txt
 3-GetCalibrations.txt
+
 
 Notes:
 They must all be inserted into serialEM scripts to be used correctly.
