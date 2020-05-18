@@ -1,0 +1,86 @@
+MacroName GetCalibrations
+
+# Files ArrayTilt_angles.txt and ArrayTilt_defoci.txt must be in the working directory!
+
+Echo Collecting a calibration tilt-series for map # $CurrentMap
+
+#### SETTINGS #########
+PosCalib = 0.1 # Positive tilt angle below which no image shift calibration will be acquired
+NegCalib = -0.1 # Negative tilt angle above which no image shift calibration will be acquired
+# Ex: Setting PosCalib = 45 and NegCalib = -30 will apply image shifts to tilts equal to or higher than +45, or lower than -30.
+#######################
+## EXPOSURE TIME ADJUSTMENT
+SearchExposure := 0.05 # Initial exposure time for Search
+targetmean := 100 # Target mean count value for a good search image
+#######################
+
+ResetClock
+SetCameraArea 5 1000 4760 0 4092
+Search
+ElectronStats A
+currentmean = $reportedValue3
+NewExp := $SearchExposure * $targetmean / $currentmean
+Echo Setting Search exposure to $NewExp
+SetExposure 5 $NewExp
+
+TotalTilts = ($MaxAngle * 2 / $TiltIncr) + 1
+### Pre-steps
+Search
+ElectronStats A
+Copy A P
+Copy A T
+ ReportSpecimenShift
+ deltaX0 = $reportedValue1
+ deltaY0 = $reportedValue2 
+
+OpenTextFile ANGLES R 0 ArrayTilt_angles.txt
+OpenTextFile DEFOCI R 0 ArrayTilt_defoci.txt
+OpenTextFile ARRAY O 0 ArrayTilt_output.txt
+OpenTextFile LOG O 0 ArrayTilt_log_$CurrentMap.txt
+
+Loop $TotalTilts
+ ReadLineToString ANGLES TiltAngle
+ ReadLineToString DEFOCI Defocus
+ TiltTo $TiltAngle
+ ReportTiltAngle 
+ check = $reportedValue1
+ ActualExp = 1 / ( COS ( $check ) )  * $ExpTime
+
+  If $check >= $PosCalib OR $reportedValue1 <= $NegCalib 
+Search
+ If $check > 0
+ AlignTo P
+ Copy A P
+ EndIf
+If $check < 0
+  AlignTo T
+  Copy A T
+Endif 
+ ReportSpecimenShift
+ deltaX1 = $reportedValue1
+ deltaY1 = $reportedValue2
+
+ deltaX = $deltaX1 - $deltaX0
+ deltaY = $deltaY1 - $deltaY0
+
+ WriteLineToFile ARRAY $TiltAngle $ActualExp $Settling $Defocus $deltaX $deltaY
+ WriteLineToFile LOG $TiltAngle $ActualExp $Settling $Defocus $deltaX $deltaY
+ 
+ deltaX = 0 - $deltaX
+ deltaY = 0 - $deltaY
+ ImageShiftByMicrons $deltaX $deltaY
+Else
+WriteLineToFile ARRAY $TiltAngle $ActualExp $Settling $Defocus 0 0
+WriteLineToFile LOG $TiltAngle $ActualExp $Settling $Defocus 0 0
+Endif 
+EndLoop 
+
+TiltTo 0
+
+CloseTextFile ARRAY
+
+ReadTextFile ArrayTmp ArrayTilt_output.txt
+ArrayTilt := $ArrayTmp
+Echo $ArrayTilt
+ReportClock
+Echo Finished acquiring calibration tilt series for map # $CurrentMap!
