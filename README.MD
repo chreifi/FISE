@@ -13,7 +13,7 @@ To run:
 4) Enable dose fractionation and set the correct frame rate for the Record parameter.
 5) Choose a working directory and file name to save the frames.
 6) Adjust file properties. Recommended file properties: unnormalized TIF with LZW compression.
-7) Run FISE script.
+7) Run FISE script. To batch collect, acquire nav items and run FISE script as primary task.
 
 Note: Working directory must contain the ArrayTilt_angles.txt and ArrayTilt_defoci.txt for the script to work correctly!
 
